@@ -98,7 +98,7 @@ namespace TfsRetrospectiveTool
 				strBuilder.ToString(),
 				null,
 				null,
-				progressReportHandler);
+				null);
 
 			return result.ToDictionary(i => i.Key, i => bugsWithOtherShips[i.Key].First());
 		}
