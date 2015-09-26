@@ -9,7 +9,18 @@ namespace TfsRetrospectiveTool
 {
 	internal class DataLoader
 	{
-		internal static Dictionary<WorkItem, int> GetWrongAreaBugs(
+		internal static List<WorkItem> GetWorkItemsByIds(string tfsUrl, List<int> ids)
+		{
+			using (var wiqlAccessor = new TfsWiqlAccessor(tfsUrl))
+			{
+				return wiqlAccessor.QueryWorkItemsByIds(
+					ids,
+					null,
+					null);
+			}
+		}
+
+		internal static Dictionary<int, int> GetWrongAreaBugs(
 			string tfsUrl,
 			string areaPath,
 			string iterarion,
@@ -36,19 +47,7 @@ namespace TfsRetrospectiveTool
 					notOurBugs.Add(pair.Key, pair.Value);
 				}
 
-				if (notOurBugs.Count == 0)
-					return new Dictionary<WorkItem, int>(0);
-
-				var result = new Dictionary<WorkItem, int>(notOurBugs.Count);
-				var bugs = wiqlAccessor.QueryWorkItemsByIds(
-					notOurBugs.Keys,
-					null,
-					progressReportHandler);
-				foreach (var bug in bugs)
-				{
-					result[bug] = notOurBugs[bug.Id];
-				}
-				return result;
+				return notOurBugs;
 			}
 		}
 

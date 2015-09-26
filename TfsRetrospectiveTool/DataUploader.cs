@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using TfsUtils.Accessors;
 
 namespace TfsRetrospectiveTool
@@ -12,12 +11,12 @@ namespace TfsRetrospectiveTool
 
 		internal static void FixBugsAreaPaths(
 			string tfsUrl,
-			Dictionary<WorkItem, int> bugsWithLinks,
+			Dictionary<int, int> bugsWithLinks,
 			Action<int> progressReportHandler)
 		{
 			using (var wiqlAccessor = new TfsWiqlAccessor(tfsUrl))
 			{
-				var ids = bugsWithLinks.Values.ToList();
+				var ids = bugsWithLinks.Values.Concat(bugsWithLinks.Keys).ToList();
 				var items = wiqlAccessor.QueryWorkItemsByIds(
 					ids,
 					null,
@@ -30,7 +29,7 @@ namespace TfsRetrospectiveTool
 				{
 					string areaPath = dict[pair.Value].AreaPath;
 
-					var bug = pair.Key;
+					var bug = dict[pair.Key];
 					bug.AreaPath = areaPath;
 
 					bug.Save();

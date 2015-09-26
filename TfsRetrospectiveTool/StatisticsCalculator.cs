@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using TfsUtils.Parsers;
 
@@ -32,7 +33,7 @@ namespace TfsRetrospectiveTool
 				(estimateSum - complectedSum) / estimateSum);
 		}
 
-		internal static Tuple<double, double> GetBugStats(List<WorkItem> bugs, double compareSum)
+		internal static Tuple<double, string> GetBugStats(List<WorkItem> bugs, double compareSum)
 		{
 			double complectedSum = 0;
 			foreach (var bug in bugs)
@@ -41,9 +42,10 @@ namespace TfsRetrospectiveTool
 				complectedSum += completed.HasValue ? completed.Value : 0;
 			}
 
-			return new Tuple<double, double>(
-				complectedSum,
-				complectedSum / compareSum);
+			string percentStr = compareSum == 0
+				? @"N\A"
+				: (complectedSum / compareSum).ToString("P", CultureInfo.InvariantCulture);
+			return new Tuple<double, string>(complectedSum, percentStr);
 		}
 	}
 }

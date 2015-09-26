@@ -1,6 +1,6 @@
 ﻿namespace TfsRetrospectiveTool
 {
-	partial class Form1
+	partial class MainForm
 	{
 		/// <summary>
 		/// Required designer variable.
@@ -756,7 +756,7 @@
 			this.label18.TabIndex = 14;
 			this.label18.Text = "Count:";
 			// 
-			// Form1
+			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -773,7 +773,7 @@
 			this.Controls.Add(this.label2);
 			this.Controls.Add(this.areaPathTextBox);
 			this.Controls.Add(this.label1);
-			this.Name = "Form1";
+			this.Name = "MainForm";
 			this.Text = "TfsRetrospectiveTool";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1FormClosing);
 			this.groupBox2.ResumeLayout(false);

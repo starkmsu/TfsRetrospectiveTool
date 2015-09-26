@@ -10,11 +10,14 @@ using Microsoft.TeamFoundation.WorkItemTracking.Client;
 
 namespace TfsRetrospectiveTool
 {
-	public partial class Form1 : Form
+	public partial class MainForm : Form
 	{
+		private const string ZeroPercents = "0%";
+		private const string UnknownCount = "???";
+
 		private readonly Config m_config;
 
-		private Dictionary<WorkItem, int> m_wrongAreaBugs;
+		private Dictionary<int, int> m_wrongAreaBugs;
 		private List<WorkItem> m_leadTasks;
 		private List<WorkItem> m_newFuncBugs;
 		private List<WorkItem> m_regressBugs;
@@ -22,7 +25,7 @@ namespace TfsRetrospectiveTool
 		private List<WorkItem> m_noShipsBugs;
 		private double m_ltCompletedSum;
 
-		public Form1()
+		public MainForm()
 		{
 			InitializeComponent();
 
@@ -62,8 +65,6 @@ namespace TfsRetrospectiveTool
 
 		private void ProgressReport(int percent, Label label)
 		{
-			//if (percent > 100)
-			//	return;
 			string percentStr = percent + "%";
 			if (label.Text == percentStr)
 				return;
@@ -97,7 +98,7 @@ namespace TfsRetrospectiveTool
 		{
 			ToggleMainControls(false);
 
-			ltPercentLabel.Text = "0%";
+			ltPercentLabel.Text = ZeroPercents;
 			ltPercentLabel.Visible = true;
 
 			ThreadPool.QueueUserWorkItem(x => GetLeadTasks());
@@ -140,7 +141,7 @@ namespace TfsRetrospectiveTool
 		{
 			ToggleMainControls(false);
 
-			wrongAreaBugsPercentLabel.Text = "0%";
+			wrongAreaBugsPercentLabel.Text = ZeroPercents;
 			wrongAreaBugsPercentLabel.Visible = true;
 
 			ThreadPool.QueueUserWorkItem(x => SearchWrongAreaPathBugs());
@@ -182,7 +183,7 @@ namespace TfsRetrospectiveTool
 			ToggleMainControls(false);
 
 			fixBugsButton.Enabled = false;
-			fixPercentLabel.Text = "0%";
+			fixPercentLabel.Text = ZeroPercents;
 			fixPercentLabel.Visible = true;
 
 			ThreadPool.QueueUserWorkItem(x => FixBugs());
@@ -199,7 +200,7 @@ namespace TfsRetrospectiveTool
 				Invoke(new Action(() =>
 					{
 						fixBugsButton.Visible = false;
-						wrongAreaBugsLabel.Text = "???";
+						wrongAreaBugsLabel.Text = @"0";
 						groupBox3.Enabled = true;
 						wrongAreaBugsExportButton.Enabled = false;
 					}));
@@ -212,6 +213,7 @@ namespace TfsRetrospectiveTool
 				{
 					fixBugsButton.Enabled = true;
 					fixPercentLabel.Visible = false;
+					wrongAreaBugsLabel.Text = UnknownCount;
 					ToggleMainControls(true);
 				}));
 		}
@@ -220,7 +222,7 @@ namespace TfsRetrospectiveTool
 		{
 			ToggleMainControls(false);
 
-			newFuncBugsPercentLabel.Text = "0%";
+			newFuncBugsPercentLabel.Text = ZeroPercents;
 			newFuncBugsPercentLabel.Visible = true;
 
 			ThreadPool.QueueUserWorkItem(x => GetNewFuncBugs());
@@ -241,7 +243,7 @@ namespace TfsRetrospectiveTool
 					{
 						newFuncBugsLabel.Text = m_newFuncBugs.Count.ToString(CultureInfo.InvariantCulture);
 						newFuncBugsCompletedLabel.Text = bugStats.Item1.ToString(CultureInfo.InvariantCulture);
-						newFuncBugsRatioLabel.Text = bugStats.Item2.ToString("P", CultureInfo.InvariantCulture);
+						newFuncBugsRatioLabel.Text = bugStats.Item2;
 						groupBox4.Enabled = true;
 						newFuncBugsExportButton.Enabled = true;
 					}));
@@ -261,7 +263,7 @@ namespace TfsRetrospectiveTool
 		{
 			ToggleMainControls(false);
 
-			regressBugsPercentLabel.Text = "0%";
+			regressBugsPercentLabel.Text = ZeroPercents;
 			regressBugsPercentLabel.Visible = true;
 
 			ThreadPool.QueueUserWorkItem(x => GetRegressBugs());
@@ -282,7 +284,7 @@ namespace TfsRetrospectiveTool
 					{
 						regressBugsLabel.Text = m_regressBugs.Count.ToString(CultureInfo.InvariantCulture);
 						regressBugsCompletedLabel.Text = bugStats.Item1.ToString(CultureInfo.InvariantCulture);
-						regressBugsRatioLabel.Text = bugStats.Item2.ToString("P", CultureInfo.InvariantCulture);
+						regressBugsRatioLabel.Text = bugStats.Item2;
 						groupBox5.Enabled = true;
 						regressBugsExportButton.Enabled = true;
 					}));
@@ -302,7 +304,7 @@ namespace TfsRetrospectiveTool
 		{
 			ToggleMainControls(false);
 
-			sdBugsPercentLabel.Text = "0%";
+			sdBugsPercentLabel.Text = ZeroPercents;
 			sdBugsPercentLabel.Visible = true;
 
 			ThreadPool.QueueUserWorkItem(x => GetSdBugs());
@@ -342,7 +344,7 @@ namespace TfsRetrospectiveTool
 		{
 			ToggleMainControls(false);
 
-			noShipBugsPercentLabel.Text = "0%";
+			noShipBugsPercentLabel.Text = ZeroPercents;
 			noShipBugsPercentLabel.Visible = true;
 
 			ThreadPool.QueueUserWorkItem(x => GetNoShipBugs());
@@ -384,7 +386,8 @@ namespace TfsRetrospectiveTool
 
 		private void WrongAreaBugsExportButtonClick(object sender, EventArgs e)
 		{
-			WorkItemsToExcelExporter.Export(m_wrongAreaBugs.Keys.ToList());
+			var items = DataLoader.GetWorkItemsByIds(tfsUrlTextBox.Text, m_wrongAreaBugs.Keys.ToList());
+			WorkItemsToExcelExporter.Export(items);
 		}
 
 		private void NewFuncBugsExportButtonClick(object sender, EventArgs e)
