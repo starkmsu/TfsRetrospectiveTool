@@ -30,7 +30,6 @@
 		{
 			this.iterationTextBox = new System.Windows.Forms.TextBox();
 			this.label2 = new System.Windows.Forms.Label();
-			this.areaPathTextBox = new System.Windows.Forms.TextBox();
 			this.wrongAreaBugsButton = new System.Windows.Forms.Button();
 			this.label1 = new System.Windows.Forms.Label();
 			this.tfsUrlTextBox = new System.Windows.Forms.TextBox();
@@ -90,6 +89,7 @@
 			this.noShipBugsButton = new System.Windows.Forms.Button();
 			this.noShipBugsLabel = new System.Windows.Forms.Label();
 			this.label18 = new System.Windows.Forms.Label();
+			this.areaPathComboBox = new System.Windows.Forms.ComboBox();
 			this.groupBox2.SuspendLayout();
 			this.groupBox1.SuspendLayout();
 			this.groupBox3.SuspendLayout();
@@ -116,15 +116,6 @@
 			this.label2.TabIndex = 8;
 			this.label2.Text = "Iteration:";
 			// 
-			// areaPathTextBox
-			// 
-			this.areaPathTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.areaPathTextBox.Location = new System.Drawing.Point(67, 39);
-			this.areaPathTextBox.Name = "areaPathTextBox";
-			this.areaPathTextBox.Size = new System.Drawing.Size(512, 20);
-			this.areaPathTextBox.TabIndex = 7;
-			// 
 			// wrongAreaBugsButton
 			// 
 			this.wrongAreaBugsButton.Location = new System.Drawing.Point(6, 19);
@@ -150,7 +141,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
 			this.tfsUrlTextBox.Location = new System.Drawing.Point(67, 12);
 			this.tfsUrlTextBox.Name = "tfsUrlTextBox";
-			this.tfsUrlTextBox.Size = new System.Drawing.Size(512, 20);
+			this.tfsUrlTextBox.Size = new System.Drawing.Size(514, 20);
 			this.tfsUrlTextBox.TabIndex = 13;
 			// 
 			// tfsUrlLabel
@@ -756,11 +747,22 @@
 			this.label18.TabIndex = 14;
 			this.label18.Text = "Count:";
 			// 
+			// areaPathComboBox
+			// 
+			this.areaPathComboBox.FormattingEnabled = true;
+			this.areaPathComboBox.Location = new System.Drawing.Point(66, 39);
+			this.areaPathComboBox.Name = "areaPathComboBox";
+			this.areaPathComboBox.Size = new System.Drawing.Size(515, 21);
+			this.areaPathComboBox.TabIndex = 22;
+			this.areaPathComboBox.SelectionChangeCommitted += new System.EventHandler(this.AreaPathComboBoxTextUpdate);
+			this.areaPathComboBox.TextUpdate += new System.EventHandler(this.AreaPathComboBoxTextUpdate);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(591, 437);
+			this.Controls.Add(this.areaPathComboBox);
 			this.Controls.Add(this.groupBox6);
 			this.Controls.Add(this.groupBox5);
 			this.Controls.Add(this.groupBox4);
@@ -771,7 +773,6 @@
 			this.Controls.Add(this.tfsUrlLabel);
 			this.Controls.Add(this.iterationTextBox);
 			this.Controls.Add(this.label2);
-			this.Controls.Add(this.areaPathTextBox);
 			this.Controls.Add(this.label1);
 			this.Name = "MainForm";
 			this.Text = "TfsRetrospectiveTool";
@@ -797,7 +798,6 @@
 
 		private System.Windows.Forms.TextBox iterationTextBox;
 		private System.Windows.Forms.Label label2;
-		private System.Windows.Forms.TextBox areaPathTextBox;
 		private System.Windows.Forms.Button wrongAreaBugsButton;
 		private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.TextBox tfsUrlTextBox;
@@ -857,6 +857,7 @@
 		private System.Windows.Forms.Button regressBugsExportButton;
 		private System.Windows.Forms.Button sdBugsExportButton;
 		private System.Windows.Forms.Button noShipBugsExportButton;
+		private System.Windows.Forms.ComboBox areaPathComboBox;
 
 	}
 }

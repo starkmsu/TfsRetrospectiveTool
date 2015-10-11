@@ -42,7 +42,7 @@ namespace TfsRetrospectiveTool
 					sheet.Cells[2+ind, 1 + i] = workItem.Fields[field].Value;
 				}
 			}
-
+			sheet.Columns.AutoFit();
 			app.Visible = true;
 		}
 	}

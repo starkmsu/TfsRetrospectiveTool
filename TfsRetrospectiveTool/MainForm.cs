@@ -32,7 +32,11 @@ namespace TfsRetrospectiveTool
 			m_config = ConfigManager.LoadConfig();
 
 			tfsUrlTextBox.Text = m_config.TfsUrl;
-			areaPathTextBox.Text = m_config.AreaPath;
+			areaPathComboBox.Text = m_config.AreaPath;
+			if (m_config.AllAreaPaths.Count == 0
+				&& !string.IsNullOrEmpty(m_config.AreaPath))
+				m_config.AllAreaPaths.Add(m_config.AreaPath);
+			areaPathComboBox.DataSource = m_config.AllAreaPaths;
 			iterationTextBox.Text = m_config.Iteration;
 		}
 
@@ -77,7 +81,7 @@ namespace TfsRetrospectiveTool
 		private void ToggleMainControls(bool isEnabled)
 		{
 			tfsUrlTextBox.Enabled = isEnabled;
-			areaPathTextBox.Enabled = isEnabled;
+			areaPathComboBox.Enabled = isEnabled;
 			iterationTextBox.Enabled = isEnabled;
 			ltSearchButton.Enabled = isEnabled;
 			wrongAreaBugsButton.Enabled = isEnabled;
@@ -90,7 +94,8 @@ namespace TfsRetrospectiveTool
 		private void SaveSettingsToConfig()
 		{
 			m_config.TfsUrl = tfsUrlTextBox.Text;
-			m_config.AreaPath = areaPathTextBox.Text;
+			m_config.AreaPath = areaPathComboBox.Text;
+			m_config.AllAreaPaths = areaPathComboBox.Items.Cast<string>().ToList();
 			m_config.Iteration = iterationTextBox.Text;
 		}
 
@@ -101,29 +106,48 @@ namespace TfsRetrospectiveTool
 			ltPercentLabel.Text = ZeroPercents;
 			ltPercentLabel.Visible = true;
 
-			ThreadPool.QueueUserWorkItem(x => GetLeadTasks());
+			string areaPath = areaPathComboBox.Text;
+
+			var areaSet = new HashSet<string>();
+			var allAreas = areaPathComboBox.Items
+				.Cast<string>()
+				.ToList();
+			foreach (string path in allAreas)
+			{
+				areaSet.Add(path);
+			}
+			if (!areaSet.Contains(areaPath))
+			{
+				allAreas.Add(areaPath);
+				areaPathComboBox.DataSource = allAreas;
+				areaPathComboBox.Text = areaPath;
+			}
+
+			ThreadPool.QueueUserWorkItem(x => GetLeadTasks(areaPath));
 		}
 
-		private void GetLeadTasks()
+		private void GetLeadTasks(string areaPath)
 		{
 			try
 			{
 				m_leadTasks = DataLoader.GetLeadTasks(
 					tfsUrlTextBox.Text,
-					areaPathTextBox.Text,
+					areaPath,
 					iterationTextBox.Text,
 					x => ProgressReport(x, ltPercentLabel));
-				SaveSettingsToConfig();
 				var ltStats = StatisticsCalculator.GetLtStats(m_leadTasks);
 				m_ltCompletedSum = ltStats.Item2;
 				Invoke(new Action(() =>
 					{
+						SaveSettingsToConfig();
 						ltLabel.Text = m_leadTasks.Count.ToString(CultureInfo.InvariantCulture);
 						ltEstimateLabel.Text = ltStats.Item1.ToString(CultureInfo.InvariantCulture);
 						ltCompletedLabel.Text = ltStats.Item2.ToString(CultureInfo.InvariantCulture);
 						ltPlanErrorLabel.Text = ltStats.Item3.ToString("P", CultureInfo.InvariantCulture);
-						groupBox2.Enabled = true;
 						ltExportButton.Enabled = true;
+						groupBox2.Enabled = true;
+						wrongAreaBugsLabel.Text = UnknownCount;
+						wrongAreaBugsExportButton.Enabled = false;
 					}));
 			}
 			catch (Exception e)
@@ -144,27 +168,34 @@ namespace TfsRetrospectiveTool
 			wrongAreaBugsPercentLabel.Text = ZeroPercents;
 			wrongAreaBugsPercentLabel.Visible = true;
 
-			ThreadPool.QueueUserWorkItem(x => SearchWrongAreaPathBugs());
+			string areaPath = areaPathComboBox.Text;
+
+			ThreadPool.QueueUserWorkItem(x => SearchWrongAreaPathBugs(areaPath));
 		}
 
-		private void SearchWrongAreaPathBugs()
+		private void SearchWrongAreaPathBugs(string areaPath)
 		{
 			try
 			{
 				m_wrongAreaBugs = DataLoader.GetWrongAreaBugs(
 					tfsUrlTextBox.Text,
-					areaPathTextBox.Text,
+					areaPath,
 					iterationTextBox.Text,
 					x => ProgressReport(x, wrongAreaBugsPercentLabel));
-				SaveSettingsToConfig();
 				Invoke(new Action(() =>
 				{
 					wrongAreaBugsLabel.Text = m_wrongAreaBugs.Count.ToString(CultureInfo.InvariantCulture);
 					fixBugsButton.Visible = m_wrongAreaBugs.Count > 0;
-					if (m_wrongAreaBugs.Count == 0)
-						groupBox3.Enabled = true;
-					else
+					if (m_wrongAreaBugs.Count != 0)
 						wrongAreaBugsExportButton.Enabled = true;
+					else
+					{
+						groupBox3.Enabled = true;
+						newFuncBugsLabel.Text = UnknownCount;
+						newFuncBugsCompletedLabel.Text = UnknownCount;
+						newFuncBugsRatioLabel.Text = UnknownCount;
+						newFuncBugsExportButton.Enabled = false;
+					}
 				}));
 			}
 			catch (Exception e)
@@ -201,8 +232,12 @@ namespace TfsRetrospectiveTool
 					{
 						fixBugsButton.Visible = false;
 						wrongAreaBugsLabel.Text = @"0";
-						groupBox3.Enabled = true;
 						wrongAreaBugsExportButton.Enabled = false;
+						groupBox3.Enabled = true;
+						newFuncBugsLabel.Text = UnknownCount;
+						newFuncBugsCompletedLabel.Text = UnknownCount;
+						newFuncBugsRatioLabel.Text = UnknownCount;
+						newFuncBugsExportButton.Enabled = false;
 					}));
 			}
 			catch (Exception e)
@@ -225,27 +260,32 @@ namespace TfsRetrospectiveTool
 			newFuncBugsPercentLabel.Text = ZeroPercents;
 			newFuncBugsPercentLabel.Visible = true;
 
-			ThreadPool.QueueUserWorkItem(x => GetNewFuncBugs());
+			string areaPath = areaPathComboBox.Text;
+
+			ThreadPool.QueueUserWorkItem(x => GetNewFuncBugs(areaPath));
 		}
 
-		private void GetNewFuncBugs()
+		private void GetNewFuncBugs(string areaPath)
 		{
 			try
 			{
 				m_newFuncBugs = DataLoader.GetNewFuncBugs(
 					tfsUrlTextBox.Text,
-					areaPathTextBox.Text,
+					areaPath,
 					iterationTextBox.Text,
 					x => ProgressReport(x, newFuncBugsPercentLabel));
-				SaveSettingsToConfig();
 				var bugStats = StatisticsCalculator.GetBugStats(m_newFuncBugs, m_ltCompletedSum);
 				Invoke(new Action(() =>
 					{
 						newFuncBugsLabel.Text = m_newFuncBugs.Count.ToString(CultureInfo.InvariantCulture);
 						newFuncBugsCompletedLabel.Text = bugStats.Item1.ToString(CultureInfo.InvariantCulture);
 						newFuncBugsRatioLabel.Text = bugStats.Item2;
-						groupBox4.Enabled = true;
 						newFuncBugsExportButton.Enabled = true;
+						groupBox4.Enabled = true;
+						regressBugsLabel.Text = UnknownCount;
+						regressBugsCompletedLabel.Text = UnknownCount;
+						regressBugsRatioLabel.Text = UnknownCount;
+						regressBugsExportButton.Enabled = false;
 					}));
 			}
 			catch (Exception e)
@@ -266,27 +306,31 @@ namespace TfsRetrospectiveTool
 			regressBugsPercentLabel.Text = ZeroPercents;
 			regressBugsPercentLabel.Visible = true;
 
-			ThreadPool.QueueUserWorkItem(x => GetRegressBugs());
+			string areaPath = areaPathComboBox.Text;
+
+			ThreadPool.QueueUserWorkItem(x => GetRegressBugs(areaPath));
 		}
 
-		private void GetRegressBugs()
+		private void GetRegressBugs(string areaPath)
 		{
 			try
 			{
 				m_regressBugs = DataLoader.GetRegressBugs(
 					tfsUrlTextBox.Text,
-					areaPathTextBox.Text,
+					areaPath,
 					iterationTextBox.Text,
 					x => ProgressReport(x, regressBugsPercentLabel));
-				SaveSettingsToConfig();
 				var bugStats = StatisticsCalculator.GetBugStats(m_regressBugs, m_ltCompletedSum);
 				Invoke(new Action(() =>
 					{
 						regressBugsLabel.Text = m_regressBugs.Count.ToString(CultureInfo.InvariantCulture);
 						regressBugsCompletedLabel.Text = bugStats.Item1.ToString(CultureInfo.InvariantCulture);
 						regressBugsRatioLabel.Text = bugStats.Item2;
-						groupBox5.Enabled = true;
 						regressBugsExportButton.Enabled = true;
+						groupBox5.Enabled = true;
+						sdBugsLabel.Text = UnknownCount;
+						sdBugsCompletedLabel.Text = UnknownCount;
+						sdBugsExportButton.Enabled = false;
 					}));
 			}
 			catch (Exception e)
@@ -307,26 +351,30 @@ namespace TfsRetrospectiveTool
 			sdBugsPercentLabel.Text = ZeroPercents;
 			sdBugsPercentLabel.Visible = true;
 
-			ThreadPool.QueueUserWorkItem(x => GetSdBugs());
+			string areaPath = areaPathComboBox.Text;
+
+			ThreadPool.QueueUserWorkItem(x => GetSdBugs(areaPath));
 		}
 
-		private void GetSdBugs()
+		private void GetSdBugs(string areaPath)
 		{
 			try
 			{
 				m_sdBugs = DataLoader.GetSdBugs(
 					tfsUrlTextBox.Text,
-					areaPathTextBox.Text,
+					areaPath,
 					iterationTextBox.Text,
 					x => ProgressReport(x, sdBugsPercentLabel));
-				SaveSettingsToConfig();
 				var bugStats = StatisticsCalculator.GetBugStats(m_sdBugs, m_ltCompletedSum);
 				Invoke(new Action(() =>
 					{
 						sdBugsLabel.Text = m_sdBugs.Count.ToString(CultureInfo.InvariantCulture);
 						sdBugsCompletedLabel.Text = bugStats.Item1.ToString(CultureInfo.InvariantCulture);
-						groupBox6.Enabled = true;
 						sdBugsExportButton.Enabled = true;
+						groupBox6.Enabled = true;
+						noShipBugsLabel.Text = UnknownCount;
+						noShipBugsCompletedLabel.Text = UnknownCount;
+						noShipBugsExportButton.Enabled = false;
 					}));
 			}
 			catch (Exception e)
@@ -347,19 +395,20 @@ namespace TfsRetrospectiveTool
 			noShipBugsPercentLabel.Text = ZeroPercents;
 			noShipBugsPercentLabel.Visible = true;
 
-			ThreadPool.QueueUserWorkItem(x => GetNoShipBugs());
+			string areaPath = areaPathComboBox.Text;
+
+			ThreadPool.QueueUserWorkItem(x => GetNoShipBugs(areaPath));
 		}
 
-		private void GetNoShipBugs()
+		private void GetNoShipBugs(string areaPath)
 		{
 			try
 			{
 				m_noShipsBugs = DataLoader.GetNoShipBugs(
 					tfsUrlTextBox.Text,
-					areaPathTextBox.Text,
+					areaPath,
 					iterationTextBox.Text,
 					x => ProgressReport(x, noShipBugsPercentLabel));
-				SaveSettingsToConfig();
 				var bugStats = StatisticsCalculator.GetBugStats(m_noShipsBugs, m_ltCompletedSum);
 				Invoke(new Action(() =>
 					{
@@ -408,6 +457,20 @@ namespace TfsRetrospectiveTool
 		private void NoShipBugsExportButtonClick(object sender, EventArgs e)
 		{
 			WorkItemsToExcelExporter.Export(m_noShipsBugs);
+		}
+
+		private void AreaPathComboBoxTextUpdate(object sender, EventArgs e)
+		{
+			groupBox2.Enabled = false;
+			groupBox3.Enabled = false;
+			groupBox4.Enabled = false;
+			groupBox5.Enabled = false;
+			groupBox6.Enabled = false;
+			ltLabel.Text = UnknownCount;
+			ltEstimateLabel.Text = UnknownCount;
+			ltCompletedLabel.Text = UnknownCount;
+			ltPlanErrorLabel.Text = UnknownCount;
+			ltExportButton.Enabled = false;
 		}
 	}
 }
